@@ -1,1 +1,101 @@
-# publiccode
+# DGUNet
+
+Official PyTorch implementation of  
+[Hansung Yu, Chuong Hoang Vo, and Chul Lee, “Detection-Guided Deep Unfolding for Joint Underwater Image Enhancement and Object Detection,” *IEEE Access*, Jan. 2026.](https://ieeexplore.ieee.org/document/11367638)
+
+The dataset and code will be updated soon.
+
+## UJED Dataset
+
+The constructed **UJED dataset** is publicly available at  
+[Google Drive](https://drive.google.com/drive/folders/1KiMzLJUgL0Y1zAQmyfXt4KhZCTc59HAB?usp=drive_link).
+
+### 📂 Dataset Structure
+
+The dataset is divided into three splits: `train`, `valid`, and `test`.  
+Each split contains the following subdirectories:
+
+- `images/` : Input degraded images
+- `gt/` : Ground-truth images
+- `labels/` : Object detection annotations in **YOLO format**
+- `Annotations/` : Object detection annotations in **PASCAL VOC (XML) format**
+
+All experiments in **DGUNet** were conducted using the **YOLO-format annotations**.
+
+```bash
+UJED/
+├─ train/
+│  ├─ Annotations/
+│  ├─ gt/
+│  ├─ images/
+│  ├─ labels/
+│  ├─ t_prior/ # acquire by running pre_processing .py
+│  └─ B_prior/ # acquire by running pre_processing .py
+│
+├─ valid/
+│  ├─ Annotations/
+│  ├─ gt/
+│  ├─ images/
+│  ├─ labels/
+│  ├─ t_prior/ # acquire by running pre_processing .py
+│  └─ B_prior/ # acquire by running pre_processing .py
+│
+├─ test/
+│  ├─ Annotations/
+│  ├─ gt/
+│  ├─ images/
+│  ├─ labels/
+│  ├─ t_prior/ # acquire by running pre_processing .py
+│  └─ B_prior/ # acquire by running pre_processing .py
+│
+└─ data.yaml  
+
+```
+
+
+### 🔧 Preprocessing
+
+Before training or testing, physics-based priors must be generated for the input images.
+
+Step 1: Physics-driven Prior Generation
+
+```bash
+python preprocessing_data.py
+```
+Please modify the dataset path inside the script to point to the root directory of your dataset.
+
+This script generates the following prior maps:
+
+- t_prior/ : Transmission map priors
+- B_prior/ : Background light priors
+
+Step 2 : Detector prior preprocssing
+
+This step pretrains the detector using ground-truth images.
+
+A pretrained detector is available here : [detection_prior.pt](https://drive.google.com/drive/folders/1ecuprpGUBr4jQFKzXuI1-uDLqw4u4Utb?usp=sharing).
+
+### Training model
+
+Start training with:
+
+```python
+python train.py 
+```
+
+### Testing model
+
+Generate enhanced images using a trained model:
+
+```python
+python test.py 
+```
+
+Pretrained enhancement weight are availiaible with [enhance_model.pth](https://drive.google.com/drive/folders/1ecuprpGUBr4jQFKzXuI1-uDLqw4u4Utb?usp=sharing).
+
+To evaluate the detection perofrmance with the enhacned images, weight is availiable with [detection_model.pth](https://drive.google.com/drive/folders/1ecuprpGUBr4jQFKzXuI1-uDLqw4u4Utb?usp=sharing).
+
+
+
+
+
