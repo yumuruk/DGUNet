@@ -24,7 +24,6 @@ ROOT_DIR = "" ## Your root directory where download this code --- CHANGE THIS
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Underwater_detection')
-    parser.add_argument('--root_dir', type=str, default='', help='root directory for this project')
     parser.add_argument('--train_dir', type=str, default='',help='Training dataset')
     parser.add_argument('--val_dir', type=str, default='',help='Validation dataset')
     parser.add_argument('--train_logs', type=str, default='',help='Training logs and outputs')
@@ -107,8 +106,7 @@ def main(args):
             labels = batch["labels"].float().to(DEVICE) # labels are not used in this training
             if t_p.shape[1] == 1:
                 t_p = t_p.repeat(1,3,1,1)
-                
-            print(f"input_img shape: {input_img.shape}, gt_img shape: {gt_img.shape}, t_p shape: {t_p.shape}, B_p shape: {B_p.shape}, labels shape: {labels.shape}")
+            
             
             optimizer.zero_grad()
             output_J, output_t, output_B = en_model(input_img, t_p, B_p, labels, det_api)
@@ -158,4 +156,5 @@ def main(args):
 
 if __name__ == "__main__":
     args = parse_args()
+
     main(args)
