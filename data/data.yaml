@@ -1,0 +1,15 @@
+# UJED dataset configuration for Ultralytics YOLO
+
+# Root directory of dataset
+path: /data/UJED 
+
+# Image directories (relative to path)
+train: train/images
+val: valid/images
+test: test/images
+
+# Number of classes
+nc: 4
+
+# Class names (index must match label IDs)
+names: ['echinus', 'holothurian', 'scallop', 'starfish']

@@ -1,0 +1,15 @@
+# weights
+*.pt
+*.pth
+
+# dataset
+UJED/
+public/
+
+# logs
+runs/
+train_logs/
+
+# cache
+__pycache__/
+*.pyc

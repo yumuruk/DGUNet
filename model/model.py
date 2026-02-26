@@ -1,24 +1,15 @@
-import os
-import sys
 import torch
 import torch.nn as nn
-import numpy as np
-import datetime
-import cv2
-
-from pathlib import Path
-from ultralytics import YOLO
-import matplotlib.pyplot as plt
 
 from .net import *
 from .model_util import *
 
 
-DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu") ## spec.ify the GPU id's, GPU id's start from 0.
+DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-class Dual_Block(nn.Module):
+class DGU_Block(nn.Module):
     def __init__(self):
-        super(Dual_Block, self).__init__()
+        super(DGU_Block, self).__init__()
         
         print("Loading Enhance Net...")
         Proximal_t = [RDN(3,1)]
@@ -36,12 +27,21 @@ class Dual_Block(nn.Module):
 
 
     def forward(self, I, t_p, B_p, B, t, J, Aux_J, Aux_t, Lag_J, Lag_t, Map_u, Map_v, u, v, w, labels, det_api, patch_size = 35, eps = 1e-6):     
+        # === Paper Note ===
+        # The hyperparameter(eta) values reported in the Experimental Settings section of the IEEE Access version are partially mis-typed.
+        # The values used here correspond to the actual configuration used during training and evaluation.
+        # eta_0 = 1.0
+        # eta_1 = 0.3
+        # eta_2 = 0.7
+        # eta_3 = 1.0
+        # eta_4 = 1.0
+        # eta_7 = 1.0
         eta_0 = 1.0
-        eta_1 = 0.1
-        eta_2 = 0.3
-        eta_3 = 1.0
-        eta_4 = 1.0
-        eta_7 = 1.0
+        eta_1 = 1.0
+        eta_2 = 1.0
+        eta_3 = 0.3
+        eta_4 = 0.7
+        eta_5 = 1.0
         rho_1 = self.rho_1
         rho_2 = self.rho_2
         rho_3 = self.rho_3
@@ -67,11 +67,11 @@ class Dual_Block(nn.Module):
 
         
         D = torch.ones(I.shape).to(DEVICE) 
-        B = (eta_2*B_p - eta_0*(J*t - I)*(1-t))/(eta_0*(1.0 - t)*(1.0 - t) + eta_2 )
+        B = (eta_4*B_p - eta_0*(J*t - I)*(1-t))/(eta_0*(1.0 - t)*(1.0 - t) + eta_4 )
         B = torch.mean(B, (2,3), True)  
         B = B*D
         
-        t = (eta_1*t_p + rho_4*Aux_t - Lag_t - eta_0*(B - I)*(J - B))/(eta_0*(J - B)*(J - B) + eta_1 + rho_4)
+        t = (eta_3*t_p + rho_4*Aux_t - Lag_t - eta_0*(B - I)*(J - B))/(eta_0*(J - B)*(J - B) + eta_3 + rho_4)
         t = self.t_1D_Net(t)
         t = torch.cat((t, t, t), 1)  
         
@@ -91,25 +91,24 @@ class Dual_Block(nn.Module):
         M_u, index_map_dark = get_dark_channel(u, patch_size)
         M_v, index_map_dark = get_dark_channel(v, patch_size)
         
-        Map_u = softThresh(M_u, eta_3/rho_1)
-        Map_v = softThresh(M_v, eta_4/rho_2)
+        Map_u = softThresh(M_u, eta_1/rho_1)
+        Map_v = softThresh(M_v, eta_2/rho_2)
         
+        ### Detection-guided prior
         with torch.no_grad():
-            J_input = J.detach().clamp(0, 1)   # 추론용 복사본
+            J_input = J.detach().clamp(0, 1) 
             bs, C, H, W = J_input.shape
-
             results = det_api.predict(J_input, imgsz=640, verbose=False)
             
             diag_dict = build_classwise_L_det(results, J_input, num_classes=det_api.model.nc)
-            
             M_gt_dict = build_classwise_M_gt(labels, J_input, num_classes=det_api.model.nc)
 
 
-        w_batch = torch.empty_like(J)  # requires_grad=False여도 괜찮음(중간노드로 그래프에 연결됨)
+        w_batch = torch.empty_like(J)  
         eps_den = 1e-12
 
         for b in range(bs):
-            J_vec = J[b].reshape(-1)                   # (3HW,), J는 requires_grad=True일 것
+            J_vec = J[b].reshape(-1)         
             denom = rho_7 + torch.zeros_like(J_vec)   
             num   = rho_7 * J_vec                 
 
@@ -123,8 +122,8 @@ class Dual_Block(nn.Module):
                 l_det_diag = l_det_diag.to(J_vec.device, dtype=J_vec.dtype)
                 m_gt_vec   = m_gt_vec.to(J_vec.device,   dtype=J_vec.dtype)
 
-                denom = denom + eta_7 * (l_det_diag * l_det_diag)
-                num   = num   + eta_7 * (l_det_diag * m_gt_vec)
+                denom = denom + eta_5 * (l_det_diag * l_det_diag)
+                num   = num   + eta_5 * (l_det_diag * m_gt_vec)
 
             w_batch[b] = (num / (denom + eps_den)).view(C, H, W)
 
@@ -135,18 +134,15 @@ class Dual_Block(nn.Module):
         
 
         
-class Dual_Net(nn.Module):
+class DGU_Net(nn.Module):
     def __init__(self, Block_number=5):
-        super(Dual_Net, self).__init__()
+        super(DGU_Net, self).__init__()
         self.Block_number = Block_number
         block_list = []
         for i in range(self.Block_number):
-            block_list.append(Dual_Block())
+            block_list.append(DGU_Block())
         self.enhance_net = nn.ModuleList(block_list)
         
-        # device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-        
-        #### Proxiaml J module 초기화
         n_feat=40; scale_unetfeats=20; kernel_size=3; reduction=4; bias=False
         act = nn.PReLU()
         self.shallow_feat1 = nn.Sequential(conv(3, n_feat, kernel_size, bias=bias), CAB(n_feat, kernel_size, reduction, bias=bias, act=act))
@@ -159,11 +155,6 @@ class Dual_Net(nn.Module):
         self.merge12=mergeblock(n_feat,3,True)
         
         self.Proximal_J = IPMM(in_c=3, out_c=3, n_feat=40, scale_unetfeats=20, scale_orsnetfeats=16, num_cab=8, kernel_size=3, reduction=4, bias=False)
-        
-        # === Detection 저장 경로 ===
-        # now = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
-        # self.save_dir = Path(f'./detection_results/')
-        # self.save_dir.mkdir(parents=True, exist_ok=True)
 
 
     def forward(self, I, t_p, B_p, labels, det_api):
@@ -203,13 +194,6 @@ class Dual_Net(nn.Module):
 
         
         for j in range(self.Block_number):
-            
-            # block_save_dir = self.save_dir / f'block_{j}'
-            # block_save_dir.mkdir(parents=True, exist_ok=True)  
-            
-            # log_dir = Path(f"./log/mask_error_block_{j}")
-            # log_dir.mkdir(parents=True, exist_ok=True)
-
             [B, t, J, Aux_J, Aux_t, Lag_J, Lag_t, Map_u, Map_v, u, v, w, rho_3] = self.enhance_net[j](I, t_p, B_p, B, t, J, Aux_J, Aux_t, Lag_J, Lag_t, Map_u, Map_v, u, v, w, labels, det_api)
             
             img = J + (1.0/rho_3)*Lag_t
