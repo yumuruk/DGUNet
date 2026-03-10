@@ -3,7 +3,8 @@
 Official PyTorch implementation of  
 [Hansung Yu, Chuong Hoang Vo, and Chul Lee, “Detection-Guided Deep Unfolding for Joint Underwater Image Enhancement and Object Detection,” *IEEE Access*, Jan. 2026.](https://ieeexplore.ieee.org/document/11367638)
 
-The dataset and code will be updated soon.
+The code and dataset is uploaded(2026.02).
+Code will be optimized soon.
 
 ## UJED Dataset
 
