@@ -8,7 +8,7 @@ Code will be optimized soon.
 
 ## UJED Dataset
 
-The constructed **UJED dataset** is publicly available at  
+The **UJED (Underwater Joint Enhancement and Detection) dataset** is a publicly available underwater image dataset designed for both underwater image enhancement and underwater object detection. This underwater dataset provides paired image enhancement data and object detection annotations, making it suitable for joint research on underwater image restoration and detection tasks. The dataset is available on  
 [Google Drive](https://drive.google.com/drive/folders/1KiMzLJUgL0Y1zAQmyfXt4KhZCTc59HAB?usp=drive_link).
 
 ### 📂 Dataset Structure
