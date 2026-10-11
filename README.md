@@ -3,6 +3,8 @@
 Official PyTorch implementation of  
 [Hansung Yu, Chuong Hoang Vo, and Chul Lee, “Detection-Guided Deep Unfolding for Joint Underwater Image Enhancement and Object Detection,” *IEEE Access*, Jan. 2026.](https://ieeexplore.ieee.org/document/11367638)
 
+**[Project Page](https://yumuruk.github.io/dgunet/)** | **[Paper](https://doi.org/10.1109/ACCESS.2026.3659134)** | **[UJED Dataset](https://drive.google.com/drive/folders/1KiMzLJUgL0Y1zAQmyfXt4KhZCTc59HAB?usp=drive_link)**
+
 The code and dataset is uploaded(2026.02).
 Code will be optimized soon.
 
@@ -104,5 +106,17 @@ Generate enhanced images using a trained model:
 python test.py 
 ```
 
+## Citation
 
+If you find this work useful, please cite:
 
+```bibtex
+@article{yu2026dgunet,
+  title   = {Detection-Guided Deep Unfolding for Joint Underwater
+             Image Enhancement and Object Detection},
+  author  = {Yu, Hansung and Vo, Chuong Hoang and Lee, Chul},
+  journal = {IEEE Access},
+  year    = {2026},
+  doi     = {10.1109/ACCESS.2026.3659134}
+}
+```
